@@ -172,6 +172,22 @@ no Moose;
 __END__
 =pod
 
+=head1 SYNOPSIS
+
+in dist.ini:
+
+ ; remove MakeMaker
+ ;[MakeMaker]
+ [ApacheTest]
+
+or if you use a bundle like C<@Classic>:
+
+ [@Filter]
+ bundle = @Classic
+ remove = MakeMaker
+
+ [ApacheTest]
+
 =head1 DESCRIPTION
 
 This plugin will produce an L<ExtUtils::MakeMaker>-powered F<Makefile.PL> with
@@ -179,7 +195,7 @@ Apache::Test hooks for the distribution.  If loaded, the
 L<Manifest|Dist::Zilla::Plugin::Manifest> plugin should also be loaded, and the
 L<MakeMaker|Dist::Zilla::Plugin::MakeMaker> plugin should not be loaded.
 
-At this time, this module is a copy of the
+At this time, this module is essentially a copy of the
 L<MakeMaker|Dist::Zilla::Plugin::MakeMaker> plugin.  Hopefully, over time, the
 L<MakeMaker|Dist::Zilla::Plugin::MakeMaker> plugin will allow more
 customization so that this module will not need to reimplement all of it.
