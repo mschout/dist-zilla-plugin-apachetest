@@ -1,6 +1,8 @@
 Revision history for Dist::Zilla::Plugin::ApacheTest
 
 {{$NEXT}}
+    - Reimplement using Dist::Zilla::Plugin::MakeMaker::Awesome. This avoids
+      replacing the MakeMaker plugin and greatly simplifies things.
 
 0.01  2010-04-01
     - initial release

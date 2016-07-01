@@ -4,166 +4,104 @@ package Dist::Zilla::Plugin::ApacheTest;
 
 use Moose;
 use Moose::Autobox;
-with 'Dist::Zilla::Role::BuildRunner';
-with 'Dist::Zilla::Role::PrereqSource';
-with 'Dist::Zilla::Role::InstallTool';
-with 'Dist::Zilla::Role::TestRunner';
-with 'Dist::Zilla::Role::TextTemplate';
+
+extends 'Dist::Zilla::Plugin::MakeMaker::Awesome';
+
+# the minimum version of Apache::Test that is required.
+has min_version => (
+    is         => 'ro',
+    isa        => 'Str',
+    default    => sub { '1.39' });
 
 
-use Data::Dumper ();
-use List::MoreUtils qw(any uniq);
+around _build_header => sub {
+    my ($orig, $self) = splice @_, 0, 2;
 
-use namespace::autoclean;
+    my $header = $self->$orig(@_);
 
-use Dist::Zilla::File::InMemory;
+    return $header . <<'END';
+# figure out if mod_perl v1 or v2 is installed.
+my $mp_version = mod_perl_version();
 
-my $template = q|
-use strict;
-use warnings;
+# configure Apache::Test
+test_configure();
+END
+};
 
-{{ $perl_prereq ? qq{ BEGIN { require $perl_prereq; } } : ''; }}
+around register_prereqs => sub {
+    my ($orig, $self) = splice @_, 0, 2;
 
-use ExtUtils::MakeMaker {{ $eumm_version }};
+    my $res = $self->$orig(@_);
 
-use Apache::TestMM qw(test clean);
-
-Apache::TestMM::filter_args();
-Apache::TestMM::generate_script('t/TEST');
-
-{{ $share_dir_block[0] }}
-
-my {{ $WriteMakefileArgs }}
-
-delete $WriteMakefileArgs{BUILD_REQUIRES}
-  unless eval { ExtUtils::MakeMaker->VERSION(6.56) };
-
-delete $WriteMakefileArgs{CONFIGURE_REQUIRES}
-  unless eval { ExtUtils::MakeMaker->VERSION(6.52) };
-
-WriteMakefile(%WriteMakefileArgs);
-
-{{ $share_dir_block[1] }}
-
-|;
-
-sub register_prereqs {
-  my ($self) = @_;
-
-  $self->zilla->register_prereqs(
-    { phase => 'configure' },
-    'ExtUtils::MakeMaker' => $self->eumm_version,
-  );
-
-  return unless $self->zilla->_share_dir;
-
-  $self->zilla->register_prereqs(
-    { phase => 'configure' },
-    'File::ShareDir::Install' => 0.03,
-  );
-}
-
-sub setup_installer {
-  my ($self, $arg) = @_;
-
-  (my $name = $self->zilla->name) =~ s/-/::/g;
-
-  my @exe_files =
-    $self->zilla->find_files(':ExecFiles')->map(sub { $_->name })->flatten;
-
-  $self->log_fatal("can't install files with whitespace in their names")
-    if grep { /\s/ } @exe_files;
-
-  my %test_dirs;
-  for my $file ($self->zilla->files->flatten) {
-    next unless $file->name =~ m{\At/.+\.t\z};
-    (my $dir = $file->name) =~ s{/[^/]+\.t\z}{/*.t}g;
-
-    $test_dirs{ $dir } = 1;
-  }
-
-  my @share_dir_block = (q{}, q{});
-
-  if (my $share_dir = $self->zilla->_share_dir) {
-    my $share_dir = quotemeta $share_dir;
-    @share_dir_block = (
-      qq{use File::ShareDir::Install;\ninstall_share "$share_dir";\n},
-      qq{package\nMY;\nuse File::ShareDir::Install qw(postamble);\n},
+    $self->zilla->register_prereqs(
+        { phase => 'configure' },
+        'Apache::Test' => $self->min_version
     );
-  }
 
-  my $meta_prereq = $self->zilla->prereq->as_distmeta;
-  my $perl_prereq = delete $meta_prereq->{requires}{perl};
+    return $res;
+};
 
-  my %write_makefile_args = (
-    DISTNAME  => $self->zilla->name,
-    NAME      => $name,
-    AUTHOR    => $self->zilla->authors->join(q{, }),
-    ABSTRACT  => $self->zilla->abstract,
-    VERSION   => $self->zilla->version,
-    LICENSE   => $self->zilla->license->meta_yml_name,
-    EXE_FILES => [ @exe_files ],
+# DZP::MakeMaker::Awesome does not have a hook for clean_files, so we have to
+# munge the WriteMakefile args instead.
+around _build_WriteMakefile_args => sub {
+    my ($orig, $self) = splice @_, 0, 2;
 
-    CONFIGURE_REQUIRES => delete $meta_prereq->{configure_requires},
-    BUILD_REQUIRES     => delete $meta_prereq->{build_requires},
-    PREREQ_PM          => delete $meta_prereq->{requires},
+    my $args = $self->$orig(@_);
 
-    test => { TESTS => join q{ }, sort keys %test_dirs },
-    clean => { FILES => 't/TEST' },
-  );
+    $args->{clean} ||= {};
+    $args->{clean}{FILES} ||= [];
 
-  $self->__write_makefile_args(\%write_makefile_args);
+    push @{ $args->{clean}{FILES} }, 't/TEST';
 
-  my $makefile_args_dumper = Data::Dumper->new(
-    [ \%write_makefile_args ],
-    [ '*WriteMakefileArgs' ],
-  );
+    return $args;
+};
 
-  my $content = $self->fill_in_string(
-    $template,
-    {
-      eumm_version      => \($self->eumm_version),
-      perl_prereq       => \$perl_prereq,
-      share_dir_block   => \@share_dir_block,
-      WriteMakefileArgs => \($makefile_args_dumper->Dump),
-    },
-  );
+around _build_footer => sub {
+    my ($orig, $self) = splice @_, 0, 2;
 
-  my $file = Dist::Zilla::File::InMemory->new({
-    name    => 'Makefile.PL',
-    content => $content,
-  });
+    my $text = $self->$orig(@_);
 
-  $self->add_file($file);
-  return;
+    $text .= <<'END';
+sub test_configure {
+    require Apache::TestMM;
+
+    # enable make test
+    Apache::TestMM->import(qw(test clean));
+
+    Apache::TestMM::filter_args();
+
+    Apache::TestMM::generate_script('t/TEST');
 }
 
-# XXX:  Just here to facilitate testing. -- rjbs, 2010-03-20
-has __write_makefile_args => (
-  is   => 'rw',
-  isa  => 'HashRef',
-);
+sub mod_perl_version {
+    # try MP2
+    eval {
+        require mod_perl2;
+    };
+    unless ($@) {
+        return 2;
+    }
 
-sub build {
-  my $self = shift;
-  system($^X => 'Makefile.PL') and die "error with Makefile.PL\n";
-  system('make')               and die "error running make\n";
-  return;
+    # try MP1
+    eval {
+        require mod_perl;
+    };
+    unless ($@) {
+        if ($mod_perl::VERSION >= 1.99) {
+            # mod_perl 2, prior to the mod_perl2 rename (1.99_21, AKA 2.0.0 RC5)
+            die "mod_perl 2.0 RC5 or later is required\n";
+        }
+
+        return 1;
+    }
+
+    # assume mod_perl version 2 is wanted
+    return 2;
 }
+END
 
-sub test {
-  my ( $self, $target ) = @_;
-  ## no critic Punctuation
-  $self->build;
-  system('make test') and die "error running make test\n";
-  return;
-}
-
-has 'eumm_version' => (
-  isa => 'Str',
-  is  => 'rw',
-  default => '6.31',
-);
+    return $text;
+};
 
 __PACKAGE__->meta->make_immutable;
 no Moose;
@@ -179,6 +117,7 @@ in dist.ini:
  ; remove MakeMaker
  ;[MakeMaker]
  [ApacheTest]
+ min_verision = 1.39
 
 or if you use a bundle like C<@Classic>:
 
@@ -195,9 +134,23 @@ Apache::Test hooks for the distribution.  If loaded, the
 L<Manifest|Dist::Zilla::Plugin::Manifest> plugin should also be loaded, and the
 L<MakeMaker|Dist::Zilla::Plugin::MakeMaker> plugin should not be loaded.
 
-At this time, this module is essentially a copy of the
-L<MakeMaker|Dist::Zilla::Plugin::MakeMaker> plugin.  Hopefully, over time, the
-L<MakeMaker|Dist::Zilla::Plugin::MakeMaker> plugin will allow more
-customization so that this module will not need to reimplement all of it.
+This module extends L<MakeMaker::Awesome|Dist::Zilla::Plugin::MakeMaker::Awesome> to fill in the necessary part of the Makefile.PL to enable L<Apache::Test>.
+
+=head1 CONFIGURATION OPTIONS
+
+The following options are avaliable in F<dist.ini> for this plugin:
+
+=for :list
+* min_version
+The minimum version of Apache::Test that will be required in C<Makefile.PL>.
+The default is C<1.39>, the most recent version of Apache::Test at the time of
+this writing.  You are B<strongly> encouraged to explicitly specify the version
+of L<Apache::Test> that is required by your module instead of relying on the
+default.
+
+=head1 SEE ALSO
+
+=for :list
+* L<MakeMaker::Awesome|Dist::Zilla::Plugin::MakeMaker::Awesome>
 
 =cut
