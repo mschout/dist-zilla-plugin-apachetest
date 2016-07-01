@@ -1,6 +1,6 @@
-package Dist::Zilla::Plugin::ApacheTest;
+package Dist::Zilla::Plugin::MakeMaker::ApacheTest;
 
-# ABSTRACT: build a Makefile.PL that uses ExtUtils::MakeMaker with Apache::Test
+# ABSTRACT: Dist::Zilla Plugin That Configures Makefile.PL for Apache::Test
 
 use Moose;
 use Moose::Autobox;
@@ -11,7 +11,7 @@ extends 'Dist::Zilla::Plugin::MakeMaker::Awesome';
 has min_version => (
     is         => 'ro',
     isa        => 'Str',
-    default    => sub { '1.39' });
+    default    => sub { 0 });
 
 
 around _build_header => sub {
@@ -20,7 +20,8 @@ around _build_header => sub {
     my $header = $self->$orig(@_);
 
     return $header . <<'END';
-# figure out if mod_perl v1 or v2 is installed.
+# figure out if mod_perl v1 or v2 is installed.  DynamicPrereqs in the
+# PluginBundle needs this to require the appropriate mod_perl module.
 my $mp_version = mod_perl_version();
 
 # configure Apache::Test
@@ -112,29 +113,18 @@ __END__
 
 =head1 SYNOPSIS
 
-in dist.ini:
-
- ; remove MakeMaker
- ;[MakeMaker]
- [ApacheTest]
- min_verision = 1.39
-
-or if you use a bundle like C<@Classic>:
-
- [@Filter]
- bundle = @Classic
- remove = MakeMaker
-
- [ApacheTest]
+You problably don't want to use this plugin directly.  You probably want
+the plugin bundle L<ApacheTest|Dist::Zilla::PluginBundle::ApacheTest> instead.
 
 =head1 DESCRIPTION
 
 This plugin will produce an L<ExtUtils::MakeMaker>-powered F<Makefile.PL> with
-Apache::Test hooks for the distribution.  If loaded, the
-L<Manifest|Dist::Zilla::Plugin::Manifest> plugin should also be loaded, and the
-L<MakeMaker|Dist::Zilla::Plugin::MakeMaker> plugin should not be loaded.
+L<Apache::Test> hooks for the distribution.  If you use this plugin, you should
+F<not> use the L<MakeMaker|Dist::Zilla::Plugin::MakeMaker> plugin.
 
-This module extends L<MakeMaker::Awesome|Dist::Zilla::Plugin::MakeMaker::Awesome> to fill in the necessary part of the Makefile.PL to enable L<Apache::Test>.
+This module extends
+L<MakeMaker::Awesome|Dist::Zilla::Plugin::MakeMaker::Awesome> to fill in the
+necessary part of the Makefile.PL to enable L<Apache::Test>.
 
 =head1 CONFIGURATION OPTIONS
 
@@ -143,10 +133,9 @@ The following options are avaliable in F<dist.ini> for this plugin:
 =for :list
 * min_version
 The minimum version of Apache::Test that will be required in C<Makefile.PL>.
-The default is C<1.39>, the most recent version of Apache::Test at the time of
-this writing.  You are B<strongly> encouraged to explicitly specify the version
-of L<Apache::Test> that is required by your module instead of relying on the
-default.
+The default is C<0>.  You are B<strongly> encouraged to explicitly specify the
+version of L<Apache::Test> that is required by your module instead of relying
+on the default.
 
 =head1 SEE ALSO
 
