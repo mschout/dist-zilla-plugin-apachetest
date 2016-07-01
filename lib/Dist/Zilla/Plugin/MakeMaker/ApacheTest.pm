@@ -3,7 +3,6 @@ package Dist::Zilla::Plugin::MakeMaker::ApacheTest;
 # ABSTRACT: Dist::Zilla Plugin That Configures Makefile.PL for Apache::Test
 
 use Moose;
-use Moose::Autobox;
 
 extends 'Dist::Zilla::Plugin::MakeMaker::Awesome';
 
