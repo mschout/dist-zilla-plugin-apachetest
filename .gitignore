@@ -1,2 +1,3 @@
 .build
+*.bak
 Dist-Zilla-Plugin-ApacheTest-*
