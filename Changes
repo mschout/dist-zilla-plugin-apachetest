@@ -1,6 +1,10 @@
 Revision history for Dist::Zilla::Plugin::ApacheTest
 
 {{$NEXT}}
+    - add Plugin::ApacheTest for compatibility with previous releases. This is
+      marked deprecated in docs and is equivalent to [MakeMaker::ApacheTest]
+      currently.
+    - update compile tests
 
 0.02  2016-07-01
   *** INCOMPATIBLE CHANGE - This module now is a plugin bundle which includes a
