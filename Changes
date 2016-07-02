@@ -5,6 +5,7 @@ Revision history for Dist::Zilla::Plugin::ApacheTest
       marked deprecated in docs and is equivalent to [MakeMaker::ApacheTest]
       currently.
     - update compile tests
+    - fix possible signature test if generated files are not ignored
 
 0.02  2016-07-01
   *** INCOMPATIBLE CHANGE - This module now is a plugin bundle which includes a
