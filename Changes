@@ -1,6 +1,8 @@
 Revision history for Dist::Zilla::Plugin::ApacheTest
 
 {{$NEXT}}
+
+0.03  2016-07-03
     - add Plugin::ApacheTest for compatibility with previous releases. This is
       marked deprecated in docs and is equivalent to [MakeMaker::ApacheTest]
       currently.
