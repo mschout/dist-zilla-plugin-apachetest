@@ -1,7 +1,7 @@
 
 
 This archive contains the distribution Dist-Zilla-Plugin-ApacheTest,
-version 0.02:
+version 0.03:
 
   Dist::Zilla Plugin Bundle That Configures Makefile.PL for Apache::Test
 

@@ -1,5 +1,5 @@
 package Dist::Zilla::Plugin::MakeMaker::ApacheTest;
-$Dist::Zilla::Plugin::MakeMaker::ApacheTest::VERSION = '0.02';
+$Dist::Zilla::Plugin::MakeMaker::ApacheTest::VERSION = '0.03';
 # ABSTRACT: Dist::Zilla Plugin That Configures Makefile.PL for Apache::Test
 
 use Moose;
@@ -117,7 +117,7 @@ Dist::Zilla::Plugin::MakeMaker::ApacheTest - Dist::Zilla Plugin That Configures 
 
 =head1 VERSION
 
-version 0.02
+version 0.03
 
 =head1 SYNOPSIS
 

@@ -1,5 +1,5 @@
 package Dist::Zilla::PluginBundle::ApacheTest;
-$Dist::Zilla::PluginBundle::ApacheTest::VERSION = '0.02';
+$Dist::Zilla::PluginBundle::ApacheTest::VERSION = '0.03';
 # ABSTRACT: Dist::Zilla Plugin Bundle That Configures Makefile.PL for Apache::Test
 
 use Moose;
@@ -47,7 +47,7 @@ Dist::Zilla::PluginBundle::ApacheTest - Dist::Zilla Plugin Bundle That Configure
 
 =head1 VERSION
 
-version 0.02
+version 0.03
 
 =head1 SYNOPSIS
 
