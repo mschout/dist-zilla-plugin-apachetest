@@ -1,6 +1,8 @@
 Revision history for Dist::Zilla::Plugin::ApacheTest
 
 {{$NEXT}}
+    - include META.json in the dist
+    - include minimum perl version in META.*
 
 0.03  2016-07-03
     - add Plugin::ApacheTest for compatibility with previous releases. This is
